@@ -7,6 +7,7 @@ import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.RadioGroup;
 import android.widget.Switch;
+import android.widget.TextView;
 
 /** 个性化：外观尺寸与颜色。 */
 public class PersonalizePage extends Page {
@@ -26,10 +27,10 @@ public class PersonalizePage extends Page {
                 R.id.card_power, R.id.card_charge_anim);
         Binders.switchTint(ctx, root, host.accent(), R.id.sw_enable, R.id.sw_track,
                 R.id.sw_warn, R.id.sw_charging, R.id.sw_charge_anim,
-                R.id.sw_power, R.id.sw_power_track);
+                R.id.sw_power);
         Binders.stepperTheme(root, host.accent(), R.id.st_stroke, R.id.st_gap,
                 R.id.st_start, R.id.st_warn_threshold, R.id.st_charge_anim_speed,
-                R.id.st_power_max, R.id.st_power_stroke, R.id.st_power_gap);
+                R.id.st_power_max, R.id.st_power_stroke);
 
         preview = root.findViewById(R.id.preview);
         modeGroup = root.findViewById(R.id.rg_mode);
@@ -137,11 +138,25 @@ public class PersonalizePage extends Page {
         Binders.bindStepper(root, R.id.st_power_stroke, R.string.opt_power_stroke,
                 host.prefs(), Prefs.KEY_POWER_STROKE_DP, Prefs.DEF_POWER_STROKE_DP,
                 0.5f, 4f, 0.5f, 1, changed);
-        Binders.bindStepper(root, R.id.st_power_gap, R.string.opt_power_gap, host.prefs(),
-                Prefs.KEY_POWER_GAP_DP, Prefs.DEF_POWER_GAP_DP, 0f, 8f, 0.5f, 1, changed);
 
-        Binders.bindSwitch(root, R.id.sw_power_track, host.prefs(), Prefs.KEY_POWER_TRACK,
-                Prefs.DEF_POWER_TRACK, changed);
+        bindPowerStyleToggle();
+    }
+
+    /** 「内环样式」默认收起：叠在同一弧上之后，颜色和粗细是进阶项，平时不用一直占屏。 */
+    private void bindPowerStyleToggle() {
+        final View body = root.findViewById(R.id.power_style_body);
+        final TextView toggle = root.findViewById(R.id.btn_power_style);
+        if (body == null || toggle == null) {
+            return;
+        }
+        toggle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                boolean show = body.getVisibility() != View.VISIBLE;
+                body.setVisibility(show ? View.VISIBLE : View.GONE);
+                toggle.setText(show ? R.string.action_collapse : R.string.action_expand);
+            }
+        });
     }
 
     private Context ctx() {

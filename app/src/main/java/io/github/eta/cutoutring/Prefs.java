@@ -60,8 +60,8 @@ public final class Prefs {
     /** 内圈满圈对应的功率（W） */
     public static final String KEY_POWER_MAX_W = "power_max_w";
     public static final String KEY_POWER_STROKE_DP = "power_stroke_dp";
+    /** 旧版本遗留键（双环时代的间距），仅为兼容保留，不再读取 */
     public static final String KEY_POWER_GAP_DP = "power_gap_dp";
-    public static final String KEY_POWER_TRACK = "power_track";
 
     /** 功率采样间隔：固定 30 秒 */
     public static final long POWER_SAMPLE_INTERVAL_MS = 30000L;
@@ -140,9 +140,7 @@ public final class Prefs {
     public static final int DEF_POWER_START = 0xFFFFD54F;
     public static final int DEF_POWER_END = 0xFFFF7043;
     public static final float DEF_POWER_MAX_W = 100f;
-    public static final float DEF_POWER_STROKE_DP = 1.5f;
-    public static final float DEF_POWER_GAP_DP = 0.5f;
-    public static final boolean DEF_POWER_TRACK = false;
+    public static final float DEF_POWER_STROKE_DP = 2.5f;
 
     private Prefs() {
     }

@@ -17,12 +17,10 @@ import android.graphics.SweepGradient;
 public final class RingRenderer {
 
     private static final int TRACK_COLOR = 0x33FFFFFF;
-    private static final int POWER_TRACK_COLOR = 0x26FFFFFF;
 
     private final Paint arcPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint trackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint powerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint powerTrackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
     private final RectF powerRect = new RectF();
     private final Matrix matrix = new Matrix();
@@ -41,9 +39,6 @@ public final class RingRenderer {
         trackPaint.setColor(TRACK_COLOR);
         powerPaint.setStyle(Paint.Style.STROKE);
         powerPaint.setStrokeCap(Paint.Cap.ROUND);
-        powerTrackPaint.setStyle(Paint.Style.STROKE);
-        powerTrackPaint.setStrokeCap(Paint.Cap.ROUND);
-        powerTrackPaint.setColor(POWER_TRACK_COLOR);
     }
 
     /**
@@ -91,8 +86,8 @@ public final class RingRenderer {
     }
 
     /**
-     * 画内圈：充电功率。外圈仍是电量，内圈贴着挖孔画功率进度，
-     * 半径自动夹在「挖孔外缘」与「电量环内缘」之间，不会压到外圈。
+     * 画充电功率：与电量环**同一半径、同一条弧**，功率弧叠加在电量弧上。
+     * 由于充电功率通常不会跑满，这样比画两个同心环更紧凑，也更容易一眼对比。
      *
      * @param watts    当前功率（W），小于等于 0 时不画
      * @param level    电量 0-100（跟随模式取色用）
@@ -104,29 +99,15 @@ public final class RingRenderer {
             return;
         }
 
-        float outerInnerEdge = cfg.radiusOverridePx > 0f
+        float radius = (cfg.radiusOverridePx > 0f
                 ? cfg.radiusOverridePx
-                : cutR + Math.max(0f, cfg.gapPx);
-        float desired = cutR + Math.max(0f, cfg.powerGapPx) + cfg.powerStrokePx / 2f;
-        float maxCenter = outerInnerEdge - cfg.powerStrokePx / 2f - 1f;
-        float minCenter = cutR + cfg.powerStrokePx / 2f + 0.5f;
-        float center = Math.min(desired, maxCenter);
-        if (center < minCenter) {
-            center = minCenter;
-        }
+                : cutR + Math.max(0f, cfg.gapPx)) + cfg.strokePx / 2f;
         float x = cx + cfg.offXPx;
         float y = cy + cfg.offYPx;
-        powerRect.set(x - center, y - center, x + center, y + center);
+        powerRect.set(x - radius, y - radius, x + radius, y + radius);
 
         powerPaint.setStrokeWidth(cfg.powerStrokePx);
-        powerTrackPaint.setStrokeWidth(cfg.powerStrokePx);
         powerPaint.setAlpha(255);
-        powerTrackPaint.setAlpha(255);
-
-        if (cfg.powerTrack) {
-            powerTrackPaint.setColor(effectColor(cfg, POWER_TRACK_COLOR));
-            canvas.drawArc(powerRect, 0f, 360f, false, powerTrackPaint);
-        }
 
         float pct = Math.max(0f, Math.min(1f, watts / cfg.powerMaxW));
         if (pct <= 0f) {

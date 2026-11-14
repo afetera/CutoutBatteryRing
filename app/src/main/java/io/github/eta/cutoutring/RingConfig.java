@@ -65,8 +65,6 @@ public final class RingConfig {
     /** 满圈对应的功率（W） */
     public float powerMaxW = Prefs.DEF_POWER_MAX_W;
     public float powerStrokePx;
-    public float powerGapPx;
-    public boolean powerTrack = Prefs.DEF_POWER_TRACK;
 
     /** 在这些应用里不显示电量环 */
     public java.util.Set<String> hiddenPackages = java.util.Collections.emptySet();
@@ -122,8 +120,6 @@ public final class RingConfig {
         c.powerMaxW = Math.max(1f, getFloat(sp, Prefs.KEY_POWER_MAX_W, Prefs.DEF_POWER_MAX_W));
         c.powerStrokePx = getFloat(sp, Prefs.KEY_POWER_STROKE_DP,
                 Prefs.DEF_POWER_STROKE_DP) * density;
-        c.powerGapPx = getFloat(sp, Prefs.KEY_POWER_GAP_DP, Prefs.DEF_POWER_GAP_DP) * density;
-        c.powerTrack = getBool(sp, Prefs.KEY_POWER_TRACK, Prefs.DEF_POWER_TRACK);
 
         if (palette != null) {
             c.darkMode = palette.dark;

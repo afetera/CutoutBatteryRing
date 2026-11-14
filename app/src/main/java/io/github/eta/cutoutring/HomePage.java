@@ -98,7 +98,21 @@ public class HomePage extends Page {
         restartStatus.setTextColor(UiKit.themeColor(ctx,
                 android.R.attr.textColorSecondary, 0xFF999999));
 
-        versionView.setText(ctx.getString(R.string.home_version, appVersion()));
+        versionView.setText("v" + appVersion());
+
+        final TextView changelog = root.findViewById(R.id.tv_changelog);
+        final TextView changelogToggle = root.findViewById(R.id.btn_changelog);
+        if (changelog != null && changelogToggle != null) {
+            changelogToggle.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    boolean expanded = changelog.getMaxLines() > 4;
+                    changelog.setMaxLines(expanded ? 4 : Integer.MAX_VALUE);
+                    changelogToggle.setText(expanded
+                            ? R.string.action_expand : R.string.action_collapse);
+                }
+            });
+        }
     }
 
     private static int contrastOn(int color) {

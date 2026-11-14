@@ -18,7 +18,7 @@
     <string name="home_hidden_count">已配置隐藏应用：%1$d 个</string>
     <string name="home_version">模块版本 %1$s</string>
     <string name="home_changelog">更新日志</string>
-    <string name="home_changelog_content">v1.19\n· 新增「充电功率内环」：充电时在电量环内侧再画一圈充电功率，每 30 秒采样一次\n· 拔掉充电器立即隐藏内环；内环颜色（跟随电量环 \/ 单色 \/ 渐变）、粗细、间距、满圈功率与底轨均可调\n· 功率读取做了多源兜底与单位自适应（BatteryManager → 电池 sysfs → USB sysfs）\n\nv1.16\n· 首页「预览充电状态」改为按钮，点击即可重复播放一次插电动画\n\nv1.14\n· 新增插电动画：插入充电器时环变绿并旋转两圈（先快后慢），速度可调\n· 调速度时预览会同步播放一次动画\n\nv1.11\n· App 重构为「首页 / 个性化 / 设置」三栏结构\n· 首页新增模块状态探测（直接向 SystemUI 查询挖孔信息）\n· 首页新增更新日志与快速重启入口\n\nv1.10\n· 莫奈渐变支持 4 套强调色方案（浅色调→深色调组合）\n· 新增深色模式调暗，避免夜间刺眼\n· 新增低电量呼吸提醒，周期可调\n· 新增横屏时隐藏\n· 修复应用选择器只列出系统应用的问题\n\nv1.9\n· 新增在指定应用中隐藏\n· 数值微调改为「加减按钮 + 输入框 + 滑杆」\n\nv1.8\n· 配置改为设置页广播推送、SystemUI 本地存储，重载开销降到微秒级\n\nv1.7\n· 新增实时预览、颜色选择器与重启 SystemUI 按钮\n\nv1.0\n· 首个版本：在挖孔周围绘制电量环</string>
+    <string name="home_changelog_content">v1.20\n· 充电功率改为叠加在电量环的同一条弧上，不再单独占一圈\n· 个性化页整理：颜色模式一行四选，功率样式与位置微调默认收起，更新日志可折叠\n· 页面底部留出导航栏空间，长内容不再被遮住\n\nv1.19\n· 新增「充电功率」：充电时显示实时功率，每 30 秒采样一次\n· 拔电自动隐藏；颜色（跟随 \/ 单色 \/ 渐变）、粗细与满圈功率可调\n· 功率读取做了多源兜底与单位自适应（BatteryManager → 电池 sysfs → USB sysfs）\n\nv1.16\n· 首页「预览充电状态」改为按钮，点击即可重复播放一次插电动画\n\nv1.14\n· 新增插电动画：插入充电器时环变绿并旋转两圈（先快后慢），速度可调\n· 调速度时预览会同步播放一次动画\n\nv1.11\n· App 重构为「首页 / 个性化 / 设置」三栏结构\n· 首页新增模块状态探测（直接向 SystemUI 查询挖孔信息）\n· 首页新增更新日志与快速重启入口\n\nv1.10\n· 莫奈渐变支持 4 套强调色方案（浅色调→深色调组合）\n· 新增深色模式调暗，避免夜间刺眼\n· 新增低电量呼吸提醒，周期可调\n· 新增横屏时隐藏\n· 修复应用选择器只列出系统应用的问题\n\nv1.9\n· 新增在指定应用中隐藏\n· 数值微调改为「加减按钮 + 输入框 + 滑杆」\n\nv1.8\n· 配置改为设置页广播推送、SystemUI 本地存储，重载开销降到微秒级\n\nv1.7\n· 新增实时预览、颜色选择器与重启 SystemUI 按钮\n\nv1.0\n· 首个版本：在挖孔周围绘制电量环</string>
 
     <!-- 通用分组 -->
     <string name="section_preview">实时预览</string>
@@ -41,13 +41,17 @@
     <string name="opt_offx">圆心 X 微调：%s dp</string>
     <string name="opt_offy">圆心 Y 微调：%s dp</string>
     <string name="opt_start">起始角度：%s°</string>
-    <string name="warn_threshold">低电量阈值：%s%%</string>
+    <string name="warn_threshold" formatted="false">低电量阈值：%s%</string>
 
     <string name="mode_monet">跟随系统莫奈取色</string>
     <string name="mode_monet_gradient">莫奈渐变（多组强调色）</string>
     <string name="monet_palette">渐变配色</string>
     <string name="mode_single">自定义单色</string>
     <string name="mode_gradient">自定义渐变</string>
+    <string name="mode_monet_short">莫奈</string>
+    <string name="mode_monet_gradient_short">莫奈渐变</string>
+    <string name="mode_single_short">单色</string>
+    <string name="mode_gradient_short">渐变</string>
     <string name="color_single">环颜色</string>
     <string name="color_start">渐变起点色</string>
     <string name="color_end">渐变终点色</string>
@@ -57,7 +61,7 @@
     <string name="charging_color">充电颜色</string>
 
     <string name="opt_dark_dim">深色模式下调暗（避免刺眼）</string>
-    <string name="dark_dim_alpha">调暗强度：%s%%</string>
+    <string name="dark_dim_alpha" formatted="false">调暗强度：%s%</string>
     <string name="opt_breath">低电量呼吸提醒</string>
     <string name="breath_period">呼吸周期：%s 秒</string>
     <string name="breath_hint">电量低于「低电量阈值」时环会呼吸闪烁，充电中或电量回升后自动停止。</string>
@@ -69,20 +73,23 @@
     <string name="charge_anim_speed">旋转速度：%s×</string>
     <string name="charge_anim_hint">插电时环会变绿并旋转两圈（先快后慢），转完保持绿色表示正在充电。</string>
 
-    <string name="section_power">充电功率内环</string>
-    <string name="section_power_style">内环样式</string>
-    <string name="opt_power">显示充电功率内环</string>
-    <string name="power_hint">充电时在电量环内侧再画一圈充电功率，拔掉充电器立即隐藏。功率每 30 秒采样一次。</string>
+    <string name="section_power">充电功率</string>
+    <string name="section_power_style">功率样式</string>
+    <string name="opt_power">显示充电功率</string>
+    <string name="power_hint">充电时把功率叠加在电量环的同一条弧上，拔掉充电器立即隐藏。功率每 30 秒采样一次。</string>
     <string name="opt_power_max">满圈功率：%s W</string>
-    <string name="opt_power_stroke">内环粗细：%s dp</string>
-    <string name="opt_power_gap">内环与挖孔间距：%s dp</string>
-    <string name="opt_power_track">显示内环底轨</string>
+    <string name="opt_power_stroke">功率弧粗细：%s dp</string>
     <string name="power_mode_follow">跟随电量环颜色</string>
     <string name="power_mode_single">自定义单色</string>
     <string name="power_mode_gradient">自定义渐变</string>
-    <string name="power_color">内环颜色</string>
-    <string name="power_color_start">内环渐变起点</string>
-    <string name="power_color_end">内环渐变终点</string>
+    <string name="power_mode_follow_short">跟随</string>
+    <string name="power_mode_single_short">单色</string>
+    <string name="power_mode_gradient_short">渐变</string>
+    <string name="action_expand">展开</string>
+    <string name="action_collapse">收起</string>
+    <string name="power_color">功率颜色</string>
+    <string name="power_color_start">功率渐变起点</string>
+    <string name="power_color_end">功率渐变终点</string>
 
     <string name="hidden_apps">在指定应用中隐藏</string>
     <string name="action_pick_apps">选择应用</string>

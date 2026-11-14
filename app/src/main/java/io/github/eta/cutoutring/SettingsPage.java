@@ -80,6 +80,25 @@ public class SettingsPage extends Page {
                 }
             }
         });
+
+        bindPositionToggle();
+    }
+
+    /** 位置微调属于一次性校准，默认收起，换机型时才展开。 */
+    private void bindPositionToggle() {
+        final View body = root.findViewById(R.id.position_body);
+        final TextView toggle = root.findViewById(R.id.btn_position);
+        if (body == null || toggle == null) {
+            return;
+        }
+        toggle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                boolean show = body.getVisibility() != View.VISIBLE;
+                body.setVisibility(show ? View.VISIBLE : View.GONE);
+                toggle.setText(show ? R.string.action_collapse : R.string.action_expand);
+            }
+        });
     }
 
     private final Binders.OnChange changed = new Binders.OnChange() {
