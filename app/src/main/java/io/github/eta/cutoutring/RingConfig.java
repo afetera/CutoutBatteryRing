@@ -56,6 +56,18 @@ public final class RingConfig {
     /** 运行时：充电色混入比例 0..1，用于插电/拔电的颜色渐变过渡 */
     public float chargeBlend;
 
+    /** 内圈：充电功率 */
+    public boolean powerEnabled = Prefs.DEF_POWER_ENABLED;
+    public int powerColorMode = Prefs.DEF_POWER_COLOR_MODE;
+    public int powerColor = Prefs.DEF_POWER_COLOR;
+    public int powerStart = Prefs.DEF_POWER_START;
+    public int powerEnd = Prefs.DEF_POWER_END;
+    /** 满圈对应的功率（W） */
+    public float powerMaxW = Prefs.DEF_POWER_MAX_W;
+    public float powerStrokePx;
+    public float powerGapPx;
+    public boolean powerTrack = Prefs.DEF_POWER_TRACK;
+
     /** 在这些应用里不显示电量环 */
     public java.util.Set<String> hiddenPackages = java.util.Collections.emptySet();
 
@@ -100,6 +112,18 @@ public final class RingConfig {
                 Prefs.DEF_CHARGE_ANIM_ENABLED);
         c.chargeAnimSpeed = getFloat(sp, Prefs.KEY_CHARGE_ANIM_SPEED,
                 Prefs.DEF_CHARGE_ANIM_SPEED);
+
+        c.powerEnabled = getBool(sp, Prefs.KEY_POWER_ENABLED, Prefs.DEF_POWER_ENABLED);
+        c.powerColorMode = getInt(sp, Prefs.KEY_POWER_COLOR_MODE,
+                Prefs.DEF_POWER_COLOR_MODE);
+        c.powerColor = getInt(sp, Prefs.KEY_POWER_COLOR, Prefs.DEF_POWER_COLOR);
+        c.powerStart = getInt(sp, Prefs.KEY_POWER_START, Prefs.DEF_POWER_START);
+        c.powerEnd = getInt(sp, Prefs.KEY_POWER_END, Prefs.DEF_POWER_END);
+        c.powerMaxW = Math.max(1f, getFloat(sp, Prefs.KEY_POWER_MAX_W, Prefs.DEF_POWER_MAX_W));
+        c.powerStrokePx = getFloat(sp, Prefs.KEY_POWER_STROKE_DP,
+                Prefs.DEF_POWER_STROKE_DP) * density;
+        c.powerGapPx = getFloat(sp, Prefs.KEY_POWER_GAP_DP, Prefs.DEF_POWER_GAP_DP) * density;
+        c.powerTrack = getBool(sp, Prefs.KEY_POWER_TRACK, Prefs.DEF_POWER_TRACK);
 
         if (palette != null) {
             c.darkMode = palette.dark;

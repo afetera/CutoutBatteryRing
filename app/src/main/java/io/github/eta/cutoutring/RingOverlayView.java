@@ -74,6 +74,22 @@ public class RingOverlayView extends View {
     private float blendFrom;
     private float blendTo;
 
+    /** 当前是否插着充电器 */
+    private boolean plugged;
+    /** 电池广播里的电压（mV），用于算充电功率 */
+    private int voltageMv = -1;
+    /** 充电功率（W）：powerTarget 是采样值，powerShown 是绘制用的缓动值 */
+    private float powerTarget = -1f;
+    private float powerShown = -1f;
+    private float powerFrom = -1f;
+    private boolean powerAnimating;
+    private long powerAnimStart;
+    private boolean powerSampling;
+    private boolean powerUnknownLogged;
+
+    /** 功率变化时约 500ms 的缓动，避免每 30 秒采样时进度条硬跳 */
+    private static final long POWER_ANIM_MS = 500L;
+
     /** 充电色淡入/淡出：把 chargeBlend 从当前值平滑推到目标值。 */
     private final Runnable blendTicker = new Runnable() {
         @Override
@@ -145,6 +161,93 @@ public class RingOverlayView extends View {
         }
     };
 
+    /** 充电中每 30 秒采样一次功率；拔电后立即停止。 */
+    private final Runnable powerPoller = new Runnable() {
+        @Override
+        public void run() {
+            if (!powerSampling) {
+                return;
+            }
+            samplePower();
+            if (powerSampling) {
+                handler.postDelayed(this, Prefs.POWER_SAMPLE_INTERVAL_MS);
+            }
+        }
+    };
+
+    private final Runnable powerTicker = new Runnable() {
+        @Override
+        public void run() {
+            if (!powerAnimating) {
+                return;
+            }
+            long elapsed = SystemClock.uptimeMillis() - powerAnimStart;
+            float t = Math.min(1f, elapsed / (float) POWER_ANIM_MS);
+            float eased = 1f - (float) Math.pow(1f - t, 3);
+            float from = Math.max(0f, powerFrom);
+            powerShown = from + (powerTarget - from) * eased;
+            invalidate();
+            if (t < 1f) {
+                handler.postDelayed(this, 24L);
+            } else {
+                powerAnimating = false;
+                powerShown = powerTarget;
+                invalidate();
+            }
+        }
+    };
+
+    /** 把绘制用的功率缓动到新采样值；传 -1 表示立刻隐藏内圈。 */
+    private void setPowerTarget(float watts) {
+        if (watts <= 0f) {
+            powerTarget = -1f;
+            powerShown = -1f;
+            powerFrom = -1f;
+            powerAnimating = false;
+            handler.removeCallbacks(powerTicker);
+            invalidate();
+            return;
+        }
+        powerTarget = watts;
+        powerFrom = powerShown < 0f ? 0f : powerShown;
+        powerAnimating = true;
+        powerAnimStart = SystemClock.uptimeMillis();
+        handler.removeCallbacks(powerTicker);
+        handler.post(powerTicker);
+    }
+
+    private void samplePower() {
+        if (config == null || !config.powerEnabled) {
+            return;
+        }
+        float watts = PowerSampler.readWatts(getContext(), voltageMv);
+        if (watts > 0f) {
+            powerUnknownLogged = false;
+            setPowerTarget(watts);
+            XposedBridge.log("[CutoutRing] charge power "
+                    + String.format(java.util.Locale.US, "%.2f", watts) + "W");
+        } else if (!powerUnknownLogged) {
+            powerUnknownLogged = true;
+            XposedBridge.log("[CutoutRing] charge power unavailable");
+        }
+    }
+
+    /** 只在「插电 + 正在充电 + 开关打开」时保持 30 秒采样，其余情况立即停。 */
+    private void syncPowerSampling() {
+        boolean should = config != null && config.powerEnabled && plugged && charging;
+        if (should) {
+            if (!powerSampling) {
+                powerSampling = true;
+                handler.removeCallbacks(powerPoller);
+                handler.post(powerPoller);
+            }
+        } else if (powerSampling) {
+            powerSampling = false;
+            handler.removeCallbacks(powerPoller);
+            setPowerTarget(-1f);
+        }
+    }
+
     private final Runnable foregroundPoller = new Runnable() {
         @Override
         public void run() {
@@ -213,6 +316,7 @@ public class RingOverlayView extends View {
                 refreshCutout(null);
             }
         });
+        syncPowerSampling();
     }
 
     @Override
@@ -222,10 +326,15 @@ public class RingOverlayView extends View {
         handler.removeCallbacks(breathTicker);
         handler.removeCallbacks(chargeAnimTicker);
         handler.removeCallbacks(blendTicker);
+        handler.removeCallbacks(powerPoller);
+        handler.removeCallbacks(powerTicker);
         foregroundPolling = false;
         breathing = false;
         chargeAnimating = false;
         blending = false;
+        powerSampling = false;
+        powerTarget = -1f;
+        powerShown = -1f;
         if (receiverRegistered) {
             try {
                 getContext().unregisterReceiver(batteryReceiver);
@@ -308,6 +417,7 @@ public class RingOverlayView extends View {
         updateHiddenPackages(config.hiddenPackages);
         syncForegroundPoller();
         updateBreathing();
+        syncPowerSampling();
 
         long costUs = (System.nanoTime() - started) / 1000L;
         XposedBridge.log("[CutoutRing] config reload cost=" + costUs + "us hiddenApps="
@@ -452,6 +562,10 @@ public class RingOverlayView extends View {
             int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100);
             int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
             int pluggedExtra = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
+            int voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1);
+            if (voltage > 0) {
+                voltageMv = voltage;
+            }
             if (lv >= 0 && scale > 0) {
                 level = Math.round(lv * 100f / scale);
             }
@@ -464,6 +578,7 @@ public class RingOverlayView extends View {
 
             // 插入充电器：播一次旋转动画（刚注入时的初始状态不算）
             boolean nowPlugged = pluggedExtra != 0;
+            plugged = nowPlugged;
             if (!pluggedInitialized) {
                 pluggedInitialized = true;
             } else if (nowPlugged && !wasPlugged) {
@@ -474,6 +589,7 @@ public class RingOverlayView extends View {
             wasPlugged = nowPlugged;
 
             updateBreathing();
+            syncPowerSampling();
             invalidate();
         } catch (Throwable t) {
             XposedBridge.log("[CutoutRing] update battery failed: " + t);
@@ -575,5 +691,8 @@ public class RingOverlayView extends View {
             return;
         }
         renderer.draw(canvas, config, cutCx, cutCy, cutR, level, charging);
+        if (config.powerEnabled && charging && powerShown > 0f) {
+            renderer.drawPower(canvas, config, cutCx, cutCy, cutR, powerShown, level, charging);
+        }
     }
 }

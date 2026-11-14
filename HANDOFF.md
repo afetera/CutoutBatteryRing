@@ -12,8 +12,8 @@
 | 仓库 | https://github.com/afetera/CutoutBatteryRing （public，MIT） |
 | 包名 | `io.github.eta.cutoutring` |
 | 作用域 | `com.android.systemui` |
-| 当前版本 | 1.18（versionCode 19） |
-| 最新提交 | `4360845` |
+| 当前版本 | 1.19（versionCode 20） |
+| 最新提交 | 见 `git log -1`（1.19 双环已提交） |
 | 作者署名 | afetera `<zhanglingyu000@126.com>` |
 
 ## 2. 开发/测试设备
@@ -29,8 +29,9 @@
 |---|---|
 | `ModuleEntry` | LSPosed 入口，按包名分发 |
 | `RingInstaller` | hook 状态栏窗口（4 个候选类）+ 控制广播（reload / restart / ping）+ 宿主注入 |
-| `RingOverlayView` | 状态栏里的绘制 View：挖孔几何、电量广播、呼吸、插电旋转、按应用隐藏 |
-| `RingRenderer` | **共用绘制核心**（渐变、深色调暗、呼吸 alpha、充电色混合），预览与真机共用 |
+| `RingOverlayView` | 状态栏里的绘制 View：挖孔几何、电量广播、呼吸、插电旋转、按应用隐藏、功率采样调度 |
+| `RingRenderer` | **共用绘制核心**（渐变、深色调暗、呼吸 alpha、充电色混合、功率内环），预览与真机共用 |
+| `PowerSampler` | 充电功率读取：BatteryManager → 电池 sysfs → USB sysfs，带单位自适应 |
 | `RingConfig` / `Prefs` | 配置快照 / 键与默认值 |
 | `MonetColors` / `MonetPalette` | 莫奈调色板读取与 4 套渐变方案 |
 | `CutoutPathUtil` | 反射 `DisplayCutout#getCutoutPath()` |
@@ -59,6 +60,14 @@
    Android 11+ 下应用选择器只能看到系统应用（这个是真实踩过的 bug）。
 7. **首页模块状态**：`ACTION_PING` / `ACTION_PONG` 通道，SystemUI 回传运行时解析到的
    挖孔坐标与隐藏应用数，是"真实探测"而非猜测。
+8. **充电功率**：电压优先用电池广播的 `EXTRA_VOLTAGE`（mV），电流优先
+   `BatteryManager.BATTERY_PROPERTY_CURRENT_NOW`（SystemUI 持有 `BATTERY_STATS`）；
+   都读不到再退到 `/sys/class/power_supply/{battery,usb}/current_now`。
+   **注意 `BatteryManager` 没有 `BATTERY_PROPERTY_VOLTAGE_NOW`**（编译期就会报错），
+   电压只能来自广播或 sysfs。current_now 的单位在这台机器上是 **mA**（用
+   charge_counter 差分 60s 验证：-6000µAh/60s ≈ 360mA，与 current_now≈243–315 同量级），
+   所以统一用数量级启发式（>20000 当 µA，否则 mA；电压 >100000 当 µV，否则 mV）。
+   采样固定 30 秒一次，只在「插电 + 正在充电 + 内环开关打开」时运行，拔电立即停止。
 
 ## 5. 已放弃的方案（别再试）
 
@@ -105,6 +114,7 @@
 | 1.14 | 插入充电器时旋转两圈（ease-out），速度可调 |
 | 1.15–1.17 | 首页改为"播放插电动画"按钮，可重复播放 |
 | 1.18 | 插电/拔电颜色 600ms 平滑过渡（渐变两端也参与混合） |
+| 1.19 | 充电功率内环（每 30 秒采样，拔电隐藏；颜色/粗细/间距/满圈功率/底轨可调） |
 
 ## 8. 实测数据（可复现，作为基线）
 
@@ -117,6 +127,8 @@
 - 颜色过渡：`(140,210,216)`→`(109,193,151)`→`(65,159,87)`→`(76,175,80)`
 - 按应用隐藏：桌面环带蓝色像素 18–19，设置应用内 0
 - 应用列表：修复后 78 个（含第三方）
+- 功率采样：真机 30 秒间隔 `1.71→11.04→12.00→11.35→11.36W`；
+  sysfs 同期 `-2722mA×4.415V≈12.02W`；`cmd battery unplug` 模拟拔电后内环像素立即消失、外环保留
 - 无 wakelock、无 alarm、无网络
 
 ## 9. 已知限制
@@ -125,6 +137,8 @@
 - 换 ROM 可能 4 个宿主候选都不命中 → 看 `logcat | grep CutoutRing`
 - 设置页拿不到 `DisplayCutout`（Android 15+ 不给普通应用窗口）→ 预览用 12dp 示意半径
 - 满电（100%）时插电看不到旋转（整圈旋转对称）
+- 功率内环依赖系统能读到 `current_now`：读不到时日志打印 `charge power unavailable`，内环不显示
+- 功率是**电池侧**估算（电压×电流），不等于适配器标称功率，会比充电器头小一些
 - 仅在一台设备（Android 16 / LOS）实测过
 
 ## 10. 可以继续做的事
@@ -134,7 +148,7 @@
 2. 手绘 M3 设计语言（可行，保持现有链）：卡片 24dp 圆角、pill 按钮、
    NavigationBar 的 pill 指示器、type scale
 3. QS 磁贴一键开关
-4. 双环样式（外圈电量 + 内圈充电进度）
+4. 内环数据源可选：适配器侧（usb sysfs）vs 电池侧
 5. 满电插电时的替代反馈（亮度闪两下 / 从 0 扫满）
 6. 配置导入导出
 
@@ -146,6 +160,9 @@ dumpsys package io.github.eta.cutoutring | grep versionName
 
 # 模块运行日志（关键三行：宿命中 / 挂载 / 挖孔坐标）
 logcat -d | grep CutoutRing
+
+# 充电功率采样（充电中每 30 秒一行，形如 charge power 23.40W）
+logcat -d | grep "charge power"
 
 # 推送配置（示例：改充电动画速度）
 am broadcast --user 0 -a io.github.eta.cutoutring.action.RELOAD \

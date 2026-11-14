@@ -3,14 +3,17 @@ package io.github.eta.cutoutring;
 import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
 import android.view.View;
+import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.RadioGroup;
+import android.widget.Switch;
 
 /** 个性化：外观尺寸与颜色。 */
 public class PersonalizePage extends Page {
 
     private RingPreviewView preview;
     private RadioGroup modeGroup;
+    private RadioGroup powerModeGroup;
 
     PersonalizePage(MainActivity host) {
         super(host, R.layout.page_personalize);
@@ -19,16 +22,20 @@ public class PersonalizePage extends Page {
 
     private void buildUi() {
         Context ctx = host;
-        Binders.card(ctx, root, R.id.card_appearance, R.id.card_color, R.id.card_charge_anim);
+        Binders.card(ctx, root, R.id.card_appearance, R.id.card_color,
+                R.id.card_power, R.id.card_charge_anim);
         Binders.switchTint(ctx, root, host.accent(), R.id.sw_enable, R.id.sw_track,
-                R.id.sw_warn, R.id.sw_charging, R.id.sw_charge_anim);
+                R.id.sw_warn, R.id.sw_charging, R.id.sw_charge_anim,
+                R.id.sw_power, R.id.sw_power_track);
         Binders.stepperTheme(root, host.accent(), R.id.st_stroke, R.id.st_gap,
-                R.id.st_start, R.id.st_warn_threshold, R.id.st_charge_anim_speed);
+                R.id.st_start, R.id.st_warn_threshold, R.id.st_charge_anim_speed,
+                R.id.st_power_max, R.id.st_power_stroke, R.id.st_power_gap);
 
         preview = root.findViewById(R.id.preview);
         modeGroup = root.findViewById(R.id.rg_mode);
 
-        int[] radios = {R.id.rb_monet, R.id.rb_monet_gradient, R.id.rb_single, R.id.rb_gradient};
+        int[] radios = {R.id.rb_monet, R.id.rb_monet_gradient, R.id.rb_single, R.id.rb_gradient,
+                R.id.rb_power_follow, R.id.rb_power_single, R.id.rb_power_gradient};
         for (int id : radios) {
             android.widget.RadioButton rb = root.findViewById(id);
             if (rb != null) {
@@ -83,6 +90,103 @@ public class PersonalizePage extends Page {
 
         buildMonetPairs();
         initChargeAnim();
+        initPower();
+    }
+
+    /** 充电功率内环：开关、三种取色方式、尺寸与满圈功率。 */
+    private void initPower() {
+        powerModeGroup = root.findViewById(R.id.rg_power_mode);
+
+        Switch powerSwitch = root.findViewById(R.id.sw_power);
+        powerSwitch.setChecked(host.prefs().getBoolean(Prefs.KEY_POWER_ENABLED,
+                Prefs.DEF_POWER_ENABLED));
+        powerSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                host.prefs().edit().putBoolean(Prefs.KEY_POWER_ENABLED, isChecked).apply();
+                updatePowerOptions();
+                refreshPreview();
+                host.onConfigChanged();
+            }
+        });
+        updatePowerOptions();
+
+        int mode = host.prefs().getInt(Prefs.KEY_POWER_COLOR_MODE, Prefs.DEF_POWER_COLOR_MODE);
+        powerModeGroup.check(powerRadioIdFor(mode));
+        updatePowerRows(mode);
+        powerModeGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                int selected = powerModeForRadio(checkedId);
+                host.prefs().edit().putInt(Prefs.KEY_POWER_COLOR_MODE, selected).apply();
+                updatePowerRows(selected);
+                refreshPreview();
+                host.onConfigChanged();
+            }
+        });
+
+        Binders.bindSwatch(ctx(), root, R.id.swatch_power, host.prefs(),
+                Prefs.KEY_POWER_COLOR, Prefs.DEF_POWER_COLOR, swatchChanged);
+        Binders.bindSwatch(ctx(), root, R.id.swatch_power_start, host.prefs(),
+                Prefs.KEY_POWER_START, Prefs.DEF_POWER_START, swatchChanged);
+        Binders.bindSwatch(ctx(), root, R.id.swatch_power_end, host.prefs(),
+                Prefs.KEY_POWER_END, Prefs.DEF_POWER_END, swatchChanged);
+
+        Binders.bindStepper(root, R.id.st_power_max, R.string.opt_power_max, host.prefs(),
+                Prefs.KEY_POWER_MAX_W, Prefs.DEF_POWER_MAX_W, 5f, 240f, 5f, 0, changed);
+        Binders.bindStepper(root, R.id.st_power_stroke, R.string.opt_power_stroke,
+                host.prefs(), Prefs.KEY_POWER_STROKE_DP, Prefs.DEF_POWER_STROKE_DP,
+                0.5f, 4f, 0.5f, 1, changed);
+        Binders.bindStepper(root, R.id.st_power_gap, R.string.opt_power_gap, host.prefs(),
+                Prefs.KEY_POWER_GAP_DP, Prefs.DEF_POWER_GAP_DP, 0f, 8f, 0.5f, 1, changed);
+
+        Binders.bindSwitch(root, R.id.sw_power_track, host.prefs(), Prefs.KEY_POWER_TRACK,
+                Prefs.DEF_POWER_TRACK, changed);
+    }
+
+    private Context ctx() {
+        return host;
+    }
+
+    private final View.OnClickListener swatchChanged = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            refreshPreview();
+            host.onConfigChanged();
+        }
+    };
+
+    private void updatePowerOptions() {
+        boolean enabled = host.prefs().getBoolean(Prefs.KEY_POWER_ENABLED,
+                Prefs.DEF_POWER_ENABLED);
+        Binders.visible(root, R.id.power_options, enabled);
+    }
+
+    private void updatePowerRows(int mode) {
+        Binders.visible(root, R.id.row_power_single, mode == Prefs.POWER_MODE_SINGLE);
+        Binders.visible(root, R.id.row_power_gradient, mode == Prefs.POWER_MODE_GRADIENT);
+    }
+
+    private static int powerRadioIdFor(int mode) {
+        switch (mode) {
+            case Prefs.POWER_MODE_SINGLE:
+                return R.id.rb_power_single;
+            case Prefs.POWER_MODE_GRADIENT:
+                return R.id.rb_power_gradient;
+            case Prefs.POWER_MODE_FOLLOW:
+            default:
+                return R.id.rb_power_follow;
+        }
+    }
+
+    private static int powerModeForRadio(int checkedId) {
+        if (checkedId == R.id.rb_power_single) {
+            return Prefs.POWER_MODE_SINGLE;
+        }
+        if (checkedId == R.id.rb_power_gradient) {
+            return Prefs.POWER_MODE_GRADIENT;
+        }
+        return Prefs.POWER_MODE_FOLLOW;
     }
 
     private void initChargeAnim() {
@@ -193,6 +297,8 @@ public class PersonalizePage extends Page {
         palette.applyPair(host, host.prefs().getInt(Prefs.KEY_MONET_PAIR, Prefs.DEF_MONET_PAIR));
         RingConfig config = RingConfig.load(host.prefs(), host.density(), palette);
         preview.setConfig(config);
+        // 预览里用约 62% 的满圈功率示意内环长度
+        preview.setDemoWatts(config.powerEnabled ? Math.max(1f, config.powerMaxW * 0.62f) : -1f);
 
         Binders.visible(root, R.id.row_warn,
                 host.prefs().getBoolean(Prefs.KEY_WARN_ENABLED, Prefs.DEF_WARN_ENABLED));
