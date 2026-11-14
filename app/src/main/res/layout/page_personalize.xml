@@ -77,7 +77,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
-            android:layout_marginBottom="20dp"
             android:orientation="vertical"
             android:padding="14dp">
 
@@ -272,6 +271,45 @@
                     android:layout_width="38dp"
                     android:layout_height="38dp" />
             </LinearLayout>
+        </LinearLayout>
+        <!-- 充电动画 -->
+        <LinearLayout
+            android:id="@+id/card_charge_anim"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="20dp"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/section_charge_anim"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <Switch
+                android:id="@+id/sw_charge_anim"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/opt_charge_anim" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:lineSpacingExtra="3dp"
+                android:text="@string/charge_anim_hint"
+                android:textColor="?android:attr/textColorSecondary"
+                android:textSize="12sp" />
+
+            <io.github.eta.cutoutring.StepperView
+                android:id="@+id/st_charge_anim_speed"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

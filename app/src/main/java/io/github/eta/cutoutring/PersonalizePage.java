@@ -19,11 +19,11 @@ public class PersonalizePage extends Page {
 
     private void buildUi() {
         Context ctx = host;
-        Binders.card(ctx, root, R.id.card_appearance, R.id.card_color);
+        Binders.card(ctx, root, R.id.card_appearance, R.id.card_color, R.id.card_charge_anim);
         Binders.switchTint(ctx, root, host.accent(), R.id.sw_enable, R.id.sw_track,
-                R.id.sw_warn, R.id.sw_charging);
+                R.id.sw_warn, R.id.sw_charging, R.id.sw_charge_anim);
         Binders.stepperTheme(root, host.accent(), R.id.st_stroke, R.id.st_gap,
-                R.id.st_start, R.id.st_warn_threshold);
+                R.id.st_start, R.id.st_warn_threshold, R.id.st_charge_anim_speed);
 
         preview = root.findViewById(R.id.preview);
         modeGroup = root.findViewById(R.id.rg_mode);
@@ -82,6 +82,23 @@ public class PersonalizePage extends Page {
                 Prefs.KEY_WARN_THRESHOLD, Prefs.DEF_WARN_THRESHOLD, 0f, 50f, 1f, 0, changed);
 
         buildMonetPairs();
+        initChargeAnim();
+    }
+
+    private void initChargeAnim() {
+        Binders.bindSwitch(root, R.id.sw_charge_anim, host.prefs(),
+                Prefs.KEY_CHARGE_ANIM_ENABLED, Prefs.DEF_CHARGE_ANIM_ENABLED, changed);
+        Binders.bindStepper(root, R.id.st_charge_anim_speed, R.string.charge_anim_speed,
+                host.prefs(), Prefs.KEY_CHARGE_ANIM_SPEED, Prefs.DEF_CHARGE_ANIM_SPEED,
+                0.5f, 3f, 0.1f, 1, new Binders.OnChange() {
+                    @Override
+                    public void onChanged() {
+                        refreshPreview();
+                        host.onConfigChanged();
+                        // 调速度时在预览里放一次动画，直观看到快慢
+                        preview.playChargeAnimation();
+                    }
+                });
     }
 
     private final Binders.OnChange changed = new Binders.OnChange() {

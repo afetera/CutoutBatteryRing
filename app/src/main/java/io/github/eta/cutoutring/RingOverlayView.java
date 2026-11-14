@@ -62,6 +62,34 @@ public class RingOverlayView extends View {
     private boolean breathing;
     private boolean receiverRegistered;
 
+    private boolean pluggedInitialized;
+    private boolean wasPlugged;
+    private boolean chargeAnimating;
+    private long chargeAnimStart;
+
+    /** 插电旋转：两圈、cubic ease-out（先快后慢），约 24 fps 驱动。 */
+    private final Runnable chargeAnimTicker = new Runnable() {
+        @Override
+        public void run() {
+            if (!chargeAnimating || config == null) {
+                return;
+            }
+            long duration = Math.max(200L, config.chargeAnimDurationMs());
+            long elapsed = SystemClock.uptimeMillis() - chargeAnimStart;
+            float t = Math.min(1f, elapsed / (float) duration);
+            float eased = 1f - (float) Math.pow(1f - t, 3);
+            config.animStartDeg = config.startDeg + 720f * eased;
+            invalidate();
+            if (t < 1f) {
+                handler.postDelayed(this, 24L);
+            } else {
+                chargeAnimating = false;
+                config.animStartDeg = Float.NaN;
+                invalidate();
+            }
+        }
+    };
+
     private final Runnable configPoller = new Runnable() {
         @Override
         public void run() {
@@ -146,8 +174,10 @@ public class RingOverlayView extends View {
         handler.removeCallbacks(configPoller);
         handler.removeCallbacks(foregroundPoller);
         handler.removeCallbacks(breathTicker);
+        handler.removeCallbacks(chargeAnimTicker);
         foregroundPolling = false;
         breathing = false;
+        chargeAnimating = false;
         if (receiverRegistered) {
             try {
                 getContext().unregisterReceiver(batteryReceiver);
@@ -373,16 +403,53 @@ public class RingOverlayView extends View {
             int lv = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
             int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100);
             int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+            int pluggedExtra = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
             if (lv >= 0 && scale > 0) {
                 level = Math.round(lv * 100f / scale);
             }
             charging = status == BatteryManager.BATTERY_STATUS_CHARGING
                     || status == BatteryManager.BATTERY_STATUS_FULL;
+
+            // 插入充电器：播一次旋转动画（刚注入时的初始状态不算）
+            boolean nowPlugged = pluggedExtra != 0;
+            if (!pluggedInitialized) {
+                pluggedInitialized = true;
+            } else if (nowPlugged && !wasPlugged) {
+                startChargeAnimation();
+            } else if (!nowPlugged && wasPlugged) {
+                stopChargeAnimation();
+            }
+            wasPlugged = nowPlugged;
+
             updateBreathing();
             invalidate();
         } catch (Throwable t) {
             XposedBridge.log("[CutoutRing] update battery failed: " + t);
         }
+    }
+
+    private void startChargeAnimation() {
+        if (config == null || !config.chargeAnimEnabled) {
+            return;
+        }
+        chargeAnimating = true;
+        chargeAnimStart = SystemClock.uptimeMillis();
+        handler.removeCallbacks(chargeAnimTicker);
+        handler.post(chargeAnimTicker);
+        XposedBridge.log("[CutoutRing] charge animation start, duration="
+                + config.chargeAnimDurationMs() + "ms");
+    }
+
+    private void stopChargeAnimation() {
+        if (!chargeAnimating) {
+            return;
+        }
+        chargeAnimating = false;
+        handler.removeCallbacks(chargeAnimTicker);
+        if (config != null) {
+            config.animStartDeg = Float.NaN;
+        }
+        invalidate();
     }
 
     // ---------------------------------------------------------------- 几何

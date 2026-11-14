@@ -46,6 +46,9 @@ public final class Prefs {
     public static final String KEY_BREATH_ENABLED = "breath_enabled";
     public static final String KEY_BREATH_PERIOD = "breath_period";
     public static final String KEY_HIDE_LANDSCAPE = "hide_landscape";
+    /** 插入充电器时的旋转动画 */
+    public static final String KEY_CHARGE_ANIM_ENABLED = "charge_anim_enabled";
+    public static final String KEY_CHARGE_ANIM_SPEED = "charge_anim_speed";
 
     /** 0 = 跟随系统莫奈取色，1 = 自定义单色，2 = 自定义渐变，3 = 莫奈渐变 */
     public static final int COLOR_MODE_MONET = 0;
@@ -106,6 +109,10 @@ public final class Prefs {
     /** 呼吸周期（秒） */
     public static final float DEF_BREATH_PERIOD = 1.5f;
     public static final boolean DEF_HIDE_LANDSCAPE = false;
+    /** 插电旋转动画默认开启 */
+    public static final boolean DEF_CHARGE_ANIM_ENABLED = true;
+    /** 旋转速度倍率（1.0 = 基础 1.8 秒转两圈） */
+    public static final float DEF_CHARGE_ANIM_SPEED = 1f;
 
     private Prefs() {
     }

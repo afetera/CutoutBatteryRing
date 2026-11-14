@@ -3,6 +3,9 @@ package io.github.eta.cutoutring;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -14,6 +17,7 @@ public class RingPreviewView extends View {
 
     private final RingRenderer renderer = new RingRenderer();
     private final Paint holePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Handler handler = new Handler(Looper.getMainLooper());
 
     private RingConfig config;
     private int level = 72;
@@ -21,6 +25,31 @@ public class RingPreviewView extends View {
     /** 真机挖孔半径（px），由 Activity 从 WindowInsets 取得 */
     private float cutR = 35f;
     private float scale = 2.2f;
+
+    private boolean animating;
+    private long animStart;
+
+    private final Runnable chargeAnimTicker = new Runnable() {
+        @Override
+        public void run() {
+            if (!animating || config == null) {
+                return;
+            }
+            long duration = Math.max(200L, config.chargeAnimDurationMs());
+            long elapsed = SystemClock.uptimeMillis() - animStart;
+            float t = Math.min(1f, elapsed / (float) duration);
+            float eased = 1f - (float) Math.pow(1f - t, 3);
+            config.animStartDeg = config.startDeg + 720f * eased;
+            invalidate();
+            if (t < 1f) {
+                handler.postDelayed(this, 24L);
+            } else {
+                animating = false;
+                config.animStartDeg = Float.NaN;
+                invalidate();
+            }
+        }
+    };
 
     public RingPreviewView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -54,6 +83,24 @@ public class RingPreviewView extends View {
             this.scale = scale;
         }
         invalidate();
+    }
+
+    /** 在预览里播一次插电旋转动画，方便调速度时看到效果。 */
+    public void playChargeAnimation() {
+        if (config == null || !config.chargeAnimEnabled) {
+            return;
+        }
+        animating = true;
+        animStart = SystemClock.uptimeMillis();
+        handler.removeCallbacks(chargeAnimTicker);
+        handler.post(chargeAnimTicker);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        handler.removeCallbacks(chargeAnimTicker);
+        animating = false;
+        super.onDetachedFromWindow();
     }
 
     @Override

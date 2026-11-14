@@ -48,6 +48,12 @@ public final class RingConfig {
 
     public boolean hideLandscape = Prefs.DEF_HIDE_LANDSCAPE;
 
+    /** 插电旋转动画 */
+    public boolean chargeAnimEnabled = Prefs.DEF_CHARGE_ANIM_ENABLED;
+    public float chargeAnimSpeed = Prefs.DEF_CHARGE_ANIM_SPEED;
+    /** 运行时：动画中的绘制起始角（NaN 表示不在动画中） */
+    public float animStartDeg = Float.NaN;
+
     /** 在这些应用里不显示电量环 */
     public java.util.Set<String> hiddenPackages = java.util.Collections.emptySet();
 
@@ -88,6 +94,10 @@ public final class RingConfig {
         c.breathEnabled = getBool(sp, Prefs.KEY_BREATH_ENABLED, Prefs.DEF_BREATH_ENABLED);
         c.breathPeriodMs = getFloat(sp, Prefs.KEY_BREATH_PERIOD, Prefs.DEF_BREATH_PERIOD) * 1000f;
         c.hideLandscape = getBool(sp, Prefs.KEY_HIDE_LANDSCAPE, Prefs.DEF_HIDE_LANDSCAPE);
+        c.chargeAnimEnabled = getBool(sp, Prefs.KEY_CHARGE_ANIM_ENABLED,
+                Prefs.DEF_CHARGE_ANIM_ENABLED);
+        c.chargeAnimSpeed = getFloat(sp, Prefs.KEY_CHARGE_ANIM_SPEED,
+                Prefs.DEF_CHARGE_ANIM_SPEED);
 
         if (palette != null) {
             c.darkMode = palette.dark;
@@ -116,6 +126,17 @@ public final class RingConfig {
                 || colorMode == Prefs.COLOR_MODE_MONET_GRADIENT;
     }
 
+    /** 绘制时实际使用的起始角：动画中会被临时覆盖。 */
+    public float effectiveStartDeg() {
+        return Float.isNaN(animStartDeg) ? startDeg : animStartDeg;
+    }
+
+    /** 插电旋转动画的时长（毫秒），速度倍率越大越短。 */
+    public long chargeAnimDurationMs() {
+        float speed = chargeAnimSpeed < 0.1f ? 0.1f : chargeAnimSpeed;
+        return (long) (1800f / speed);
+    }
+
     public int gradientStartColor() {
         return colorMode == Prefs.COLOR_MODE_MONET_GRADIENT ? monetGradStart : colorStart;
     }
@@ -125,8 +146,7 @@ public final class RingConfig {
     }
 
     /** 单色模式下应该用的颜色（渐变模式下作为兜底）。 */
-    public int solidColor() {
-        switch (colorMode) {
+    public int solidColor() {        switch (colorMode) {
             case Prefs.COLOR_MODE_SINGLE:
                 return colorSingle;
             case Prefs.COLOR_MODE_GRADIENT:

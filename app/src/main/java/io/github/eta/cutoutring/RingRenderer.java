@@ -64,14 +64,15 @@ public final class RingRenderer {
 
         float pct = Math.max(0f, Math.min(100f, level)) / 100f;
         float sweep = Math.max(0.6f, 360f * pct);
+        float startDeg = cfg.effectiveStartDeg();
 
         if (useGradient(cfg, level, charging)) {
-            arcPaint.setShader(sweepShader(cfg, x, y, sweep));
+            arcPaint.setShader(sweepShader(cfg, x, y, sweep, startDeg));
         } else {
             arcPaint.setShader(null);
             arcPaint.setColor(effectColor(cfg, resolveColor(cfg, level, charging)));
         }
-        canvas.drawArc(rect, cfg.startDeg, sweep, false, arcPaint);
+        canvas.drawArc(rect, startDeg, sweep, false, arcPaint);
     }
 
     /** 当前状态下应该用哪种颜色：警示色 / 充电色 优先于模式色。 */
@@ -122,18 +123,19 @@ public final class RingRenderer {
      * 沿圆周的扫掠渐变：起止色恰好铺满已充能的那段弧（而不是整圈），
      * 这样 40% 电量也能看到完整的颜色过渡。
      */
-    private Shader sweepShader(RingConfig cfg, float cx, float cy, float sweep) {
+    private Shader sweepShader(RingConfig cfg, float cx, float cy, float sweep,
+                               float startDeg) {
         int startColor = effectColor(cfg, cfg.gradientStartColor());
         int endColor = effectColor(cfg, cfg.gradientEndColor());
         float frac = Math.max(0.01f, Math.min(1f, sweep / 360f));
         String key = startColor + ":" + endColor + ":" + Math.round(sweep) + ":"
-                + Math.round(cx) + ":" + Math.round(cy) + ":" + Math.round(cfg.startDeg);
+                + Math.round(cx) + ":" + Math.round(cy) + ":" + Math.round(startDeg);
         if (cachedShader != null && key.equals(cachedKey)) {
             return cachedShader;
         }
         SweepGradient gradient = new SweepGradient(cx, cy,
                 new int[]{startColor, endColor}, new float[]{0f, frac});
-        matrix.setRotate(cfg.startDeg, cx, cy);
+        matrix.setRotate(startDeg, cx, cy);
         gradient.setLocalMatrix(matrix);
         cachedShader = gradient;
         cachedKey = key;
