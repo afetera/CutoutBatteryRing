@@ -28,6 +28,7 @@ public class RingPreviewView extends View {
 
     private boolean animating;
     private long animStart;
+    private boolean demoRunning;
 
     private final Runnable chargeAnimTicker = new Runnable() {
         @Override
@@ -94,6 +95,34 @@ public class RingPreviewView extends View {
         animStart = SystemClock.uptimeMillis();
         handler.removeCallbacks(chargeAnimTicker);
         handler.post(chargeAnimTicker);
+    }
+
+    /**
+     * 播放一次完整的"插入充电器"演示：先变绿，再旋转两圈，结束后恢复原来的配色。
+     * 可以反复点击重复观看。动画被关掉时退化为单纯切换绿色提示。
+     */
+    public void playChargeDemo() {
+        if (config == null || demoRunning) {
+            return;
+        }
+        if (!config.chargeAnimEnabled) {
+            charging = !charging;
+            invalidate();
+            return;
+        }
+        demoRunning = true;
+        charging = true;
+        invalidate();
+        playChargeAnimation();
+        long duration = config.chargeAnimDurationMs();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                charging = false;
+                demoRunning = false;
+                invalidate();
+            }
+        }, duration + 150L);
     }
 
     @Override

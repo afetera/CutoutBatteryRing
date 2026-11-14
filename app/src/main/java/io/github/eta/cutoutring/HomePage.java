@@ -41,8 +41,19 @@ public class HomePage extends Page {
         Context ctx = host;
         Binders.card(ctx, root, R.id.card_preview, R.id.card_status,
                 R.id.card_changelog, R.id.card_actions);
-        Binders.switchTint(ctx, root, host.accent(), R.id.sw_preview_charging);
         Binders.seekTint(ctx, root, host.accent(), R.id.sb_preview);
+        Button chargeDemo = root.findViewById(R.id.btn_preview_charge);
+        if (chargeDemo != null) {
+            chargeDemo.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                    UiKit.withAlpha(host.accent(), 0x33)));
+            chargeDemo.setTextColor(host.accent());
+            chargeDemo.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    preview.playChargeDemo();
+                }
+            });
+        }
 
         preview = root.findViewById(R.id.preview);
         previewLevelView = root.findViewById(R.id.tv_preview_level);
@@ -70,18 +81,6 @@ public class HomePage extends Page {
 
             @Override
             public void onStopTrackingTouch(SeekBar bar) {
-            }
-        });
-
-        Switch charging = root.findViewById(R.id.sw_preview_charging);
-        boolean chargingOn = host.prefs().getBoolean(Prefs.KEY_PREVIEW_CHARGING, false);
-        charging.setChecked(chargingOn);
-        preview.setPreviewCharging(chargingOn);
-        charging.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                host.prefs().edit().putBoolean(Prefs.KEY_PREVIEW_CHARGING, isChecked).apply();
-                preview.setPreviewCharging(isChecked);
             }
         });
 

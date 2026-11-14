@@ -61,11 +61,12 @@
                 android:layout_height="wrap_content"
                 android:max="100" />
 
-            <Switch
-                android:id="@+id/sw_preview_charging"
+            <Button
+                android:id="@+id/btn_preview_charge"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/opt_preview_charging" />
+                android:layout_marginTop="4dp"
+                android:text="@string/action_preview_charge" />
         </LinearLayout>
 
         <!-- 模块状态 -->
