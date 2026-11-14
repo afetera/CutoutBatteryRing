@@ -53,6 +53,8 @@ public final class RingConfig {
     public float chargeAnimSpeed = Prefs.DEF_CHARGE_ANIM_SPEED;
     /** 运行时：动画中的绘制起始角（NaN 表示不在动画中） */
     public float animStartDeg = Float.NaN;
+    /** 运行时：充电色混入比例 0..1，用于插电/拔电的颜色渐变过渡 */
+    public float chargeBlend;
 
     /** 在这些应用里不显示电量环 */
     public java.util.Set<String> hiddenPackages = java.util.Collections.emptySet();

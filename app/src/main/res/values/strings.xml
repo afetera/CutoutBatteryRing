@@ -32,7 +32,7 @@
 
     <string name="opt_enable">启用电量环</string>
     <string name="opt_track">显示底轨</string>
-    <string name="action_preview_charge">模拟插入充电器（播放动画）</string>
+    <string name="action_preview_charge">播放插电动画</string>
     <string name="preview_level">预览电量：%1$d%%</string>
 
     <string name="opt_stroke">环粗细：%s dp</string>

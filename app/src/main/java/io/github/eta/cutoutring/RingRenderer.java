@@ -66,7 +66,10 @@ public final class RingRenderer {
         float sweep = Math.max(0.6f, 360f * pct);
         float startDeg = cfg.effectiveStartDeg();
 
-        if (useGradient(cfg, level, charging)) {
+        boolean warn = cfg.warnEnabled && level <= cfg.warnThreshold;
+        boolean gradient = cfg.isGradient() && !warn;
+
+        if (gradient) {
             arcPaint.setShader(sweepShader(cfg, x, y, sweep, startDeg));
         } else {
             arcPaint.setShader(null);
@@ -75,15 +78,26 @@ public final class RingRenderer {
         canvas.drawArc(rect, startDeg, sweep, false, arcPaint);
     }
 
-    /** 当前状态下应该用哪种颜色：警示色 / 充电色 优先于模式色。 */
+    /** 当前状态下应该用哪种颜色（已混入充电过渡比例）。 */
     public int resolveColor(RingConfig cfg, int level, boolean charging) {
-        if (charging && cfg.chargingOverride) {
-            return cfg.chargingColor;
-        }
+        int base;
         if (cfg.warnEnabled && level <= cfg.warnThreshold) {
-            return cfg.warnColor;
+            base = cfg.warnColor;
+        } else {
+            base = cfg.solidColor();
         }
-        return cfg.solidColor();
+        return applyChargeBlend(cfg, base);
+    }
+
+    /**
+     * 把颜色按 {@code chargeBlend} 混向充电色，实现插电/拔电的颜色过渡：
+     * 0 = 原色，1 = 纯充电色。
+     */
+    public int applyChargeBlend(RingConfig cfg, int color) {
+        if (!cfg.chargingOverride || cfg.chargeBlend <= 0.001f) {
+            return color;
+        }
+        return blend(color, cfg.chargingColor, Math.min(1f, cfg.chargeBlend));
     }
 
     /** 深色模式调暗 + 呼吸透明度。 */
@@ -125,8 +139,9 @@ public final class RingRenderer {
      */
     private Shader sweepShader(RingConfig cfg, float cx, float cy, float sweep,
                                float startDeg) {
-        int startColor = effectColor(cfg, cfg.gradientStartColor());
-        int endColor = effectColor(cfg, cfg.gradientEndColor());
+        // 渐变两端同样按 chargeBlend 混向充电色，插电过渡时不会跳变
+        int startColor = effectColor(cfg, applyChargeBlend(cfg, cfg.gradientStartColor()));
+        int endColor = effectColor(cfg, applyChargeBlend(cfg, cfg.gradientEndColor()));
         float frac = Math.max(0.01f, Math.min(1f, sweep / 360f));
         String key = startColor + ":" + endColor + ":" + Math.round(sweep) + ":"
                 + Math.round(cx) + ":" + Math.round(cy) + ":" + Math.round(startDeg);

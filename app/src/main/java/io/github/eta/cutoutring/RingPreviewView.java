@@ -30,6 +30,44 @@ public class RingPreviewView extends View {
     private long animStart;
     private boolean demoRunning;
 
+    private boolean blending;
+    private long blendStart;
+    private float blendFrom;
+    private float blendTo;
+
+    private final Runnable blendTicker = new Runnable() {
+        @Override
+        public void run() {
+            if (!blending || config == null) {
+                return;
+            }
+            long elapsed = SystemClock.uptimeMillis() - blendStart;
+            float t = Math.min(1f, elapsed / 600f);
+            float eased = t * t * (3f - 2f * t);
+            config.chargeBlend = blendFrom + (blendTo - blendFrom) * eased;
+            invalidate();
+            if (t < 1f) {
+                handler.postDelayed(this, 24L);
+            } else {
+                blending = false;
+                config.chargeBlend = blendTo;
+                invalidate();
+            }
+        }
+    };
+
+    private void animateBlend(float target) {
+        if (config == null) {
+            return;
+        }
+        blendFrom = config.chargeBlend;
+        blendTo = target;
+        blending = true;
+        blendStart = SystemClock.uptimeMillis();
+        handler.removeCallbacks(blendTicker);
+        handler.post(blendTicker);
+    }
+
     private final Runnable chargeAnimTicker = new Runnable() {
         @Override
         public void run() {
@@ -98,29 +136,25 @@ public class RingPreviewView extends View {
     }
 
     /**
-     * 播放一次完整的"插入充电器"演示：先变绿，再旋转两圈，结束后恢复原来的配色。
-     * 可以反复点击重复观看。动画被关掉时退化为单纯切换绿色提示。
+     * 播放一次完整的"插入充电器"演示：颜色渐变到绿 + 旋转两圈，结束后颜色渐变回来。
+     * 可以反复点击重复观看。
      */
     public void playChargeDemo() {
         if (config == null || demoRunning) {
             return;
         }
-        if (!config.chargeAnimEnabled) {
-            charging = !charging;
-            invalidate();
-            return;
-        }
         demoRunning = true;
-        charging = true;
-        invalidate();
-        playChargeAnimation();
-        long duration = config.chargeAnimDurationMs();
+        boolean animated = config.chargeAnimEnabled;
+        if (animated) {
+            playChargeAnimation();
+        }
+        animateBlend(1f);
+        long duration = animated ? config.chargeAnimDurationMs() : 700L;
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                charging = false;
+                animateBlend(0f);
                 demoRunning = false;
-                invalidate();
             }
         }, duration + 150L);
     }
@@ -128,7 +162,9 @@ public class RingPreviewView extends View {
     @Override
     protected void onDetachedFromWindow() {
         handler.removeCallbacks(chargeAnimTicker);
+        handler.removeCallbacks(blendTicker);
         animating = false;
+        blending = false;
         super.onDetachedFromWindow();
     }
 

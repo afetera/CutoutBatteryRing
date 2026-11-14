@@ -39,6 +39,8 @@ public class RingOverlayView extends View {
     private static final long CONFIG_POLL_INTERVAL_MS = 30000L;
     private static final long FOREGROUND_POLL_INTERVAL_MS = 1000L;
     private static final long BREATH_FRAME_MS = 50L;
+    /** 插电/拔电时颜色渐变过渡的时长 */
+    private static final long CHARGE_BLEND_MS = 600L;
 
     private final RingRenderer renderer = new RingRenderer();
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -66,6 +68,50 @@ public class RingOverlayView extends View {
     private boolean wasPlugged;
     private boolean chargeAnimating;
     private long chargeAnimStart;
+
+    private boolean blending;
+    private long blendStart;
+    private float blendFrom;
+    private float blendTo;
+
+    /** 充电色淡入/淡出：把 chargeBlend 从当前值平滑推到目标值。 */
+    private final Runnable blendTicker = new Runnable() {
+        @Override
+        public void run() {
+            if (!blending || config == null) {
+                return;
+            }
+            long elapsed = SystemClock.uptimeMillis() - blendStart;
+            float t = Math.min(1f, elapsed / (float) CHARGE_BLEND_MS);
+            float eased = t * t * (3f - 2f * t);   // smoothstep
+            config.chargeBlend = blendFrom + (blendTo - blendFrom) * eased;
+            invalidate();
+            if (t < 1f) {
+                handler.postDelayed(this, 24L);
+            } else {
+                blending = false;
+                config.chargeBlend = blendTo;
+                invalidate();
+            }
+        }
+    };
+
+    private void animateChargeBlend(boolean toCharging) {
+        if (config == null) {
+            return;
+        }
+        blendFrom = config.chargeBlend;
+        blendTo = toCharging ? 1f : 0f;
+        if (Math.abs(blendFrom - blendTo) < 0.01f) {
+            config.chargeBlend = blendTo;
+            invalidate();
+            return;
+        }
+        blending = true;
+        blendStart = SystemClock.uptimeMillis();
+        handler.removeCallbacks(blendTicker);
+        handler.post(blendTicker);
+    }
 
     /** 插电旋转：两圈、cubic ease-out（先快后慢），约 24 fps 驱动。 */
     private final Runnable chargeAnimTicker = new Runnable() {
@@ -175,9 +221,11 @@ public class RingOverlayView extends View {
         handler.removeCallbacks(foregroundPoller);
         handler.removeCallbacks(breathTicker);
         handler.removeCallbacks(chargeAnimTicker);
+        handler.removeCallbacks(blendTicker);
         foregroundPolling = false;
         breathing = false;
         chargeAnimating = false;
+        blending = false;
         if (receiverRegistered) {
             try {
                 getContext().unregisterReceiver(batteryReceiver);
@@ -407,8 +455,12 @@ public class RingOverlayView extends View {
             if (lv >= 0 && scale > 0) {
                 level = Math.round(lv * 100f / scale);
             }
-            charging = status == BatteryManager.BATTERY_STATUS_CHARGING
+            boolean nowCharging = status == BatteryManager.BATTERY_STATUS_CHARGING
                     || status == BatteryManager.BATTERY_STATUS_FULL;
+            if (nowCharging != charging) {
+                charging = nowCharging;
+                animateChargeBlend(nowCharging);
+            }
 
             // 插入充电器：播一次旋转动画（刚注入时的初始状态不算）
             boolean nowPlugged = pluggedExtra != 0;
