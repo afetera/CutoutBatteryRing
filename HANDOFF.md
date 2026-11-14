@@ -12,8 +12,8 @@
 | 仓库 | https://github.com/afetera/CutoutBatteryRing （public，MIT） |
 | 包名 | `io.github.eta.cutoutring` |
 | 作用域 | `com.android.systemui` |
-| 当前版本 | 1.20（versionCode 21） |
-| 最新提交 | 见 `git log -1`（1.19 双环已提交） |
+| 当前版本 | 1.21（versionCode 22） |
+| 最新提交 | 见 `git log -1`（1.21 已移除功率显示） |
 | 作者署名 | afetera `<zhanglingyu000@126.com>` |
 
 ## 2. 开发/测试设备
@@ -29,9 +29,8 @@
 |---|---|
 | `ModuleEntry` | LSPosed 入口，按包名分发 |
 | `RingInstaller` | hook 状态栏窗口（4 个候选类）+ 控制广播（reload / restart / ping）+ 宿主注入 |
-| `RingOverlayView` | 状态栏里的绘制 View：挖孔几何、电量广播、呼吸、插电旋转、按应用隐藏、功率采样调度 |
-| `RingRenderer` | **共用绘制核心**（渐变、深色调暗、呼吸 alpha、充电色混合、功率叠加弧），预览与真机共用 |
-| `PowerSampler` | 充电功率读取：BatteryManager → 电池 sysfs → USB sysfs，带单位自适应 |
+| `RingOverlayView` | 状态栏里的绘制 View：挖孔几何、电量广播、呼吸、插电旋转、按应用隐藏 |
+| `RingRenderer` | **共用绘制核心**（渐变、深色调暗、呼吸 alpha、充电色混合），预览与真机共用 |
 | `RingConfig` / `Prefs` | 配置快照 / 键与默认值 |
 | `MonetColors` / `MonetPalette` | 莫奈调色板读取与 4 套渐变方案 |
 | `CutoutPathUtil` | 反射 `DisplayCutout#getCutoutPath()` |
@@ -60,18 +59,6 @@
    Android 11+ 下应用选择器只能看到系统应用（这个是真实踩过的 bug）。
 7. **首页模块状态**：`ACTION_PING` / `ACTION_PONG` 通道，SystemUI 回传运行时解析到的
    挖孔坐标与隐藏应用数，是"真实探测"而非猜测。
-8. **充电功率**：电压优先用电池广播的 `EXTRA_VOLTAGE`（mV），电流优先
-   `BatteryManager.BATTERY_PROPERTY_CURRENT_NOW`（SystemUI 持有 `BATTERY_STATS`）；
-   都读不到再退到 `/sys/class/power_supply/{battery,usb}/current_now`。
-   **注意 `BatteryManager` 没有 `BATTERY_PROPERTY_VOLTAGE_NOW`**（编译期就会报错），
-   电压只能来自广播或 sysfs。current_now 的单位在这台机器上是 **mA**（用
-   charge_counter 差分 60s 验证：-6000µAh/60s ≈ 360mA，与 current_now≈243–315 同量级），
-   所以统一用数量级启发式（>20000 当 µA，否则 mA；电压 >100000 当 µV，否则 mV）。
-   采样固定 30 秒一次，只在「插电 + 正在充电 + 开关打开」时运行，拔电立即停止。
-9. **功率弧画在同一条弧上**（1.20 起）：不单独占一圈，半径直接复用外环中心线，
-   画在电量弧之上；功率通常充不满，所以前段是功率色、后段露出电量色，一眼能对比。
-   优点是省空间、不会两条细环挤在一起；代价是两者粗细不一致时功率弧两侧会
-   露出电量色细边（用户可把功率弧粗细调到与外环一致）。
 
 ## 5. 已放弃的方案（别再试）
 
@@ -83,6 +70,9 @@
   实测：material 1.12 的 656 个资源能 `aapt2 compile`，但与我们的资源一起 `link` 直接报
   `style/Animation.AppCompat.Dialog not found`、`attr/dialogPreferredPadding not found`
   —— 需要整棵依赖树（约 30 个 AAR）按顺序合并，且本地无 Gradle / Android SDK。
+- **充电功率显示**（1.19–1.20 试验，1.21 已移除）：功率数据本身能稳定读到
+  （`BatteryManager` 电流 + 广播电压，30 秒采样），但无论做成内外双环还是叠加弧，
+  真机观感都不理想，用户明确要求不要。没有新的视觉方案前别再加回来。
 
 ## 6. 构建
 
@@ -118,8 +108,9 @@
 | 1.14 | 插入充电器时旋转两圈（ease-out），速度可调 |
 | 1.15–1.17 | 首页改为"播放插电动画"按钮，可重复播放 |
 | 1.18 | 插电/拔电颜色 600ms 平滑过渡（渐变两端也参与混合） |
-| 1.19 | 充电功率内环（每 30 秒采样，拔电隐藏；颜色/粗细/间距/满圈功率/底轨可调） |
-| 1.20 | 功率改为叠加在电量环同一弧上；App 布局整理（颜色一行四选、功率样式与位置微调折叠、更新日志折叠、底部留白） |
+| 1.19 | （已废弃）充电功率内环试验 |
+| 1.20 | App 布局整理：颜色一行四选、位置微调折叠、更新日志折叠、底部留白；功率改为叠加显示（仅试验） |
+| 1.21 | 移除充电功率显示，回到纯粹的电量环；保留 1.20 的布局整理 |
 
 ## 8. 实测数据（可复现，作为基线）
 
@@ -132,8 +123,6 @@
 - 颜色过渡：`(140,210,216)`→`(109,193,151)`→`(65,159,87)`→`(76,175,80)`
 - 按应用隐藏：桌面环带蓝色像素 18–19，设置应用内 0
 - 应用列表：修复后 78 个（含第三方）
-- 功率采样：真机 30 秒间隔 `1.71→11.04→12.00→11.35→11.36W`；
-  sysfs 同期 `-2722mA×4.415V≈12.02W`；`cmd battery unplug` 模拟拔电后内环像素立即消失、外环保留
 - 无 wakelock、无 alarm、无网络
 
 ## 9. 已知限制
@@ -142,9 +131,6 @@
 - 换 ROM 可能 4 个宿主候选都不命中 → 看 `logcat | grep CutoutRing`
 - 设置页拿不到 `DisplayCutout`（Android 15+ 不给普通应用窗口）→ 预览用 12dp 示意半径
 - 满电（100%）时插电看不到旋转（整圈旋转对称）
-- 功率读取依赖系统能读到 `current_now`：读不到时日志打印 `charge power unavailable`，不显示功率弧
-- 功率是**电池侧**估算（电压×电流），不等于适配器标称功率，会比充电器头小一些
-- 功率弧与电量弧同半径：两者粗细不一致时，功率弧两侧会露出电量色细边
 - 仅在一台设备（Android 16 / LOS）实测过
 
 ## 10. 可以继续做的事
@@ -167,8 +153,6 @@ dumpsys package io.github.eta.cutoutring | grep versionName
 # 模块运行日志（关键三行：宿命中 / 挂载 / 挖孔坐标）
 logcat -d | grep CutoutRing
 
-# 充电功率采样（充电中每 30 秒一行，形如 charge power 23.40W）
-logcat -d | grep "charge power"
 
 # 推送配置（示例：改充电动画速度）
 am broadcast --user 0 -a io.github.eta.cutoutring.action.RELOAD \

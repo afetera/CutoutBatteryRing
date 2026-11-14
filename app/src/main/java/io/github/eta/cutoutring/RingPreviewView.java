@@ -22,8 +22,6 @@ public class RingPreviewView extends View {
     private RingConfig config;
     private int level = 72;
     private boolean charging;
-    /** 预览用的示例功率（W），<0 表示不显示内圈 */
-    private float demoWatts = -1f;
     /** 真机挖孔半径（px），由 Activity 从 WindowInsets 取得 */
     private float cutR = 35f;
     private float scale = 2.2f;
@@ -112,12 +110,6 @@ public class RingPreviewView extends View {
         invalidate();
     }
 
-    /** 预览内圈用的示例功率；传 -1 隐藏内圈。 */
-    public void setDemoWatts(float watts) {
-        this.demoWatts = watts;
-        invalidate();
-    }
-
     public void setCutRadius(float cutR) {
         if (cutR > 0f) {
             this.cutR = cutR;
@@ -187,9 +179,6 @@ public class RingPreviewView extends View {
         canvas.scale(scale, scale);
         canvas.drawCircle(0f, 0f, cutR, holePaint);
         renderer.draw(canvas, config, 0f, 0f, cutR, level, charging);
-        if (config.powerEnabled && demoWatts > 0f) {
-            renderer.drawPower(canvas, config, 0f, 0f, cutR, demoWatts, level, charging);
-        }
         canvas.restore();
     }
 }

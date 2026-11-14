@@ -20,16 +20,11 @@ public final class RingRenderer {
 
     private final Paint arcPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint trackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint powerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
-    private final RectF powerRect = new RectF();
     private final Matrix matrix = new Matrix();
-    private final Matrix powerMatrix = new Matrix();
 
     private Shader cachedShader;
     private String cachedKey;
-    private Shader cachedPowerShader;
-    private String cachedPowerKey;
 
     public RingRenderer() {
         arcPaint.setStyle(Paint.Style.STROKE);
@@ -37,8 +32,6 @@ public final class RingRenderer {
         trackPaint.setStyle(Paint.Style.STROKE);
         trackPaint.setStrokeCap(Paint.Cap.ROUND);
         trackPaint.setColor(TRACK_COLOR);
-        powerPaint.setStyle(Paint.Style.STROKE);
-        powerPaint.setStrokeCap(Paint.Cap.ROUND);
     }
 
     /**
@@ -83,49 +76,6 @@ public final class RingRenderer {
             arcPaint.setColor(effectColor(cfg, resolveColor(cfg, level, charging)));
         }
         canvas.drawArc(rect, startDeg, sweep, false, arcPaint);
-    }
-
-    /**
-     * 画充电功率：与电量环**同一半径、同一条弧**，功率弧叠加在电量弧上。
-     * 由于充电功率通常不会跑满，这样比画两个同心环更紧凑，也更容易一眼对比。
-     *
-     * @param watts    当前功率（W），小于等于 0 时不画
-     * @param level    电量 0-100（跟随模式取色用）
-     * @param charging 是否在充电（跟随模式下取充电色）
-     */
-    public void drawPower(Canvas canvas, RingConfig cfg, float cx, float cy, float cutR,
-                          float watts, int level, boolean charging) {
-        if (cfg == null || !cfg.powerEnabled || cfg.powerStrokePx <= 0f || watts <= 0f) {
-            return;
-        }
-
-        float radius = (cfg.radiusOverridePx > 0f
-                ? cfg.radiusOverridePx
-                : cutR + Math.max(0f, cfg.gapPx)) + cfg.strokePx / 2f;
-        float x = cx + cfg.offXPx;
-        float y = cy + cfg.offYPx;
-        powerRect.set(x - radius, y - radius, x + radius, y + radius);
-
-        powerPaint.setStrokeWidth(cfg.powerStrokePx);
-        powerPaint.setAlpha(255);
-
-        float pct = Math.max(0f, Math.min(1f, watts / cfg.powerMaxW));
-        if (pct <= 0f) {
-            return;
-        }
-        float sweep = Math.max(0.8f, 360f * pct);
-        float startDeg = cfg.effectiveStartDeg();
-
-        if (cfg.powerColorMode == Prefs.POWER_MODE_GRADIENT) {
-            powerPaint.setShader(powerShader(cfg, x, y, sweep, startDeg));
-        } else if (cfg.powerColorMode == Prefs.POWER_MODE_SINGLE) {
-            powerPaint.setShader(null);
-            powerPaint.setColor(effectColor(cfg, cfg.powerColor));
-        } else {
-            powerPaint.setShader(null);
-            powerPaint.setColor(effectColor(cfg, resolveColor(cfg, level, charging)));
-        }
-        canvas.drawArc(powerRect, startDeg, sweep, false, powerPaint);
     }
 
     public int resolveColor(RingConfig cfg, int level, boolean charging) {
@@ -206,23 +156,4 @@ public final class RingRenderer {
         return gradient;
     }
 
-    /** 内圈专用渐变：独立矩阵与缓存，避免和外圈共用 Matrix 互相覆盖。 */
-    private Shader powerShader(RingConfig cfg, float cx, float cy, float sweep,
-                               float startDeg) {
-        int startColor = effectColor(cfg, cfg.powerStart);
-        int endColor = effectColor(cfg, cfg.powerEnd);
-        float frac = Math.max(0.01f, Math.min(1f, sweep / 360f));
-        String key = startColor + ":" + endColor + ":" + Math.round(sweep) + ":"
-                + Math.round(cx) + ":" + Math.round(cy) + ":" + Math.round(startDeg);
-        if (cachedPowerShader != null && key.equals(cachedPowerKey)) {
-            return cachedPowerShader;
-        }
-        SweepGradient gradient = new SweepGradient(cx, cy,
-                new int[]{startColor, endColor}, new float[]{0f, frac});
-        powerMatrix.setRotate(startDeg, cx, cy);
-        gradient.setLocalMatrix(powerMatrix);
-        cachedPowerShader = gradient;
-        cachedPowerKey = key;
-        return gradient;
-    }
 }

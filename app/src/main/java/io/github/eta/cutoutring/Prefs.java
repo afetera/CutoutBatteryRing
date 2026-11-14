@@ -50,26 +50,6 @@ public final class Prefs {
     public static final String KEY_CHARGE_ANIM_ENABLED = "charge_anim_enabled";
     public static final String KEY_CHARGE_ANIM_SPEED = "charge_anim_speed";
 
-    // 内圈：充电功率
-    public static final String KEY_POWER_ENABLED = "power_enabled";
-    /** 0 = 跟随电量环颜色，1 = 自定义单色，2 = 自定义渐变 */
-    public static final String KEY_POWER_COLOR_MODE = "power_color_mode";
-    public static final String KEY_POWER_COLOR = "power_color";
-    public static final String KEY_POWER_START = "power_start";
-    public static final String KEY_POWER_END = "power_end";
-    /** 内圈满圈对应的功率（W） */
-    public static final String KEY_POWER_MAX_W = "power_max_w";
-    public static final String KEY_POWER_STROKE_DP = "power_stroke_dp";
-    /** 旧版本遗留键（双环时代的间距），仅为兼容保留，不再读取 */
-    public static final String KEY_POWER_GAP_DP = "power_gap_dp";
-
-    /** 功率采样间隔：固定 30 秒 */
-    public static final long POWER_SAMPLE_INTERVAL_MS = 30000L;
-
-    public static final int POWER_MODE_FOLLOW = 0;
-    public static final int POWER_MODE_SINGLE = 1;
-    public static final int POWER_MODE_GRADIENT = 2;
-
     /** 0 = 跟随系统莫奈取色，1 = 自定义单色，2 = 自定义渐变，3 = 莫奈渐变 */
     public static final int COLOR_MODE_MONET = 0;
     public static final int COLOR_MODE_SINGLE = 1;
@@ -134,13 +114,6 @@ public final class Prefs {
     /** 旋转速度倍率（1.0 = 基础 1.8 秒转两圈） */
     public static final float DEF_CHARGE_ANIM_SPEED = 1f;
 
-    public static final boolean DEF_POWER_ENABLED = true;
-    public static final int DEF_POWER_COLOR_MODE = POWER_MODE_FOLLOW;
-    public static final int DEF_POWER_COLOR = 0xFFFFB74D;
-    public static final int DEF_POWER_START = 0xFFFFD54F;
-    public static final int DEF_POWER_END = 0xFFFF7043;
-    public static final float DEF_POWER_MAX_W = 100f;
-    public static final float DEF_POWER_STROKE_DP = 2.5f;
 
     private Prefs() {
     }
