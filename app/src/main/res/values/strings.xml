@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">挖孔电量环</string>
+    <string name="module_desc">在屏幕挖孔周围绘制电量进度环，支持莫奈取色、自定义渐变、低电量呼吸与按应用隐藏（作用于 SystemUI）</string>
+
+    <string name="tab_home">首页</string>
+    <string name="tab_personalize">个性化</string>
+    <string name="tab_settings">设置</string>
+
+    <!-- 首页 -->
+    <string name="home_tagline">在挖孔周围显示一圈电量进度</string>
+    <string name="home_module_status">模块状态</string>
+    <string name="home_status_probing">正在检测模块…</string>
+    <string name="home_status_online">已注入 SystemUI，运行中</string>
+    <string name="home_status_offline">未响应：模块可能未启用</string>
+    <string name="home_status_offline_hint">请在 LSPosed 中启用本模块并把作用域勾选为「系统界面 / SystemUI」，然后点下面的按钮重启 SystemUI。</string>
+    <string name="home_cutout">挖孔：%1$s</string>
+    <string name="home_hidden_count">已配置隐藏应用：%1$d 个</string>
+    <string name="home_version">模块版本 %1$s</string>
+    <string name="home_changelog">更新日志</string>
+    <string name="home_changelog_content">v1.11\n· App 重构为「首页 / 个性化 / 设置」三栏结构\n· 首页新增模块状态探测（直接向 SystemUI 查询挖孔信息）\n· 首页新增更新日志与快速重启入口\n\nv1.10\n· 莫奈渐变支持 4 套强调色方案（浅色调→深色调组合）\n· 新增深色模式调暗，避免夜间刺眼\n· 新增低电量呼吸提醒，周期可调\n· 新增横屏时隐藏\n· 修复应用选择器只列出系统应用的问题\n\nv1.9\n· 新增在指定应用中隐藏\n· 数值微调改为「加减按钮 + 输入框 + 滑杆」\n\nv1.8\n· 配置改为设置页广播推送、SystemUI 本地存储，重载开销降到微秒级\n\nv1.7\n· 新增实时预览、颜色选择器与重启 SystemUI 按钮\n\nv1.0\n· 首个版本：在挖孔周围绘制电量环</string>
+
+    <!-- 通用分组 -->
+    <string name="section_preview">实时预览</string>
+    <string name="section_appearance">外观</string>
+    <string name="section_color">颜色</string>
+    <string name="section_hiding">显示范围</string>
+    <string name="section_night">夜间与提醒</string>
+    <string name="section_position">位置微调</string>
+    <string name="section_actions">操作</string>
+    <string name="section_restart">重启 SystemUI</string>
+
+    <string name="opt_enable">启用电量环</string>
+    <string name="opt_track">显示底轨</string>
+    <string name="opt_preview_charging">预览充电状态</string>
+    <string name="preview_level">预览电量：%1$d%%</string>
+
+    <string name="opt_stroke">环粗细：%s dp</string>
+    <string name="opt_gap">与挖孔的间距：%s dp</string>
+    <string name="opt_radius">手动半径（0 = 自动）：%s dp</string>
+    <string name="opt_offx">圆心 X 微调：%s dp</string>
+    <string name="opt_offy">圆心 Y 微调：%s dp</string>
+    <string name="opt_start">起始角度：%s°</string>
+    <string name="warn_threshold">低电量阈值：%s%%</string>
+
+    <string name="mode_monet">跟随系统莫奈取色</string>
+    <string name="mode_monet_gradient">莫奈渐变（多组强调色）</string>
+    <string name="monet_palette">渐变配色</string>
+    <string name="mode_single">自定义单色</string>
+    <string name="mode_gradient">自定义渐变</string>
+    <string name="color_single">环颜色</string>
+    <string name="color_start">渐变起点色</string>
+    <string name="color_end">渐变终点色</string>
+    <string name="warn_enable">低电量时变色</string>
+    <string name="warn_color">低电量颜色</string>
+    <string name="charging_override">充电时统一着色</string>
+    <string name="charging_color">充电颜色</string>
+
+    <string name="opt_dark_dim">深色模式下调暗（避免刺眼）</string>
+    <string name="dark_dim_alpha">调暗强度：%s%%</string>
+    <string name="opt_breath">低电量呼吸提醒</string>
+    <string name="breath_period">呼吸周期：%s 秒</string>
+    <string name="breath_hint">电量低于「低电量阈值」时环会呼吸闪烁，充电中或电量回升后自动停止。</string>
+    <string name="opt_hide_landscape">横屏时隐藏</string>
+    <string name="landscape_hint">横屏时挖孔会转到屏幕侧边，而本模块的绘制区域只覆盖顶部，所以横屏本来就看不到环；该开关用于显式禁止绘制。</string>
+
+    <string name="hidden_apps">在指定应用中隐藏</string>
+    <string name="action_pick_apps">选择应用</string>
+    <string name="hidden_apps_summary">已选择 %1$d 个应用（在这些应用中不显示电量环）</string>
+
+    <string name="picker_apps_title">在哪些应用中隐藏</string>
+    <string name="picker_apps_desc">勾选的应用进入前台时，电量环会自动隐藏；返回桌面或其它应用后恢复。列表为空则始终显示。</string>
+    <string name="picker_apps_search">搜索应用名或包名</string>
+    <string name="picker_apps_all">全选</string>
+    <string name="picker_apps_none">清空</string>
+    <string name="picker_summary">已选 %1$d / 共 %2$d 个应用</string>
+
+    <string name="action_restart">重启 SystemUI（重新注入）</string>
+    <string name="restart_hint">模块更新后如果没生效，点这个按钮即可。若没收到模块回执，会尝试用 root 直接重启 SystemUI。</string>
+    <string name="restart_sending">正在通知模块…</string>
+    <string name="restart_sent">已发送重启请求</string>
+    <string name="restart_ok">已收到模块回执，SystemUI 正在重启</string>
+    <string name="restart_fallback">模块未回执（可能尚未启用），尝试用 root 重启…</string>
+    <string name="restart_ok_root">已通过 root 重启 SystemUI</string>
+    <string name="restart_failed">重启失败：模块未启用且 root 不可用</string>
+
+    <string name="picker_title">选择颜色</string>
+    <string name="picker_hue">色相</string>
+    <string name="picker_saturation">饱和度</string>
+    <string name="picker_value">亮度</string>
+    <string name="picker_hex_hint">#RRGGBB</string>
+
+    <string name="cutout_none">未检测到挖孔</string>
+    <string name="cutout_unavailable">设置页读不到挖孔数据：Android 15+ 不再向普通应用窗口下发 DisplayCutout。预览按约 12dp 半径示意，比例（粗细/间距）与真机一致；实际环由模块在 SystemUI 内按真机挖孔自动对齐。</string>
+    <string name="tip_log">若看不到效果，可在日志中搜索 “CutoutRing” 查看挖孔坐标与注入结果。</string>
+</resources>

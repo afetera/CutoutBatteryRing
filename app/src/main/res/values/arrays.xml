@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 模块作用域：SystemUI 负责绘制状态栏/挖孔区域；自身用于自检注入状态 -->
+    <string-array name="xposed_scope">
+        <item>com.android.systemui</item>
+        <item>io.github.eta.cutoutring</item>
+    </string-array>
+</resources>

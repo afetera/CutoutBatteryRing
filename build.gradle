@@ -1,0 +1,4 @@
+// 顶层构建脚本。AGP 版本按你本地 Android Studio 调整即可。
+plugins {
+    id 'com.android.application' version '8.7.3' apply false
+}

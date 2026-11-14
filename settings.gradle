@@ -1,0 +1,19 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        // 传统 Xposed API（de.robv.android.xposed:api:82）所在仓库
+        maven { url = uri("https://api.xposed.info/") }
+    }
+}
+
+rootProject.name = "CutoutBatteryRing"
+include ':app'

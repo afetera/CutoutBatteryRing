@@ -1,0 +1,26 @@
+# 构建产物
+build/
+app/build/
+.gradle/
+local.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# IDE / 编辑器
+.idea/
+*.iml
+*.swp
+*~
+.DS_Store
+
+# 签名材料：绝对不要提交
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+
+# 临时文件
+*.log
+out/
