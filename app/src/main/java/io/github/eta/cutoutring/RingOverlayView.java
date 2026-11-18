@@ -303,7 +303,24 @@ public class RingOverlayView extends View {
         palette.applyPair(getContext(), pair);
 
         float density = getResources().getDisplayMetrics().density;
-        config = RingConfig.load(local, density, palette);
+        RingConfig previous = config;
+        RingConfig fresh = RingConfig.load(local, density, palette);
+        // chargeBlend / pulseAlpha / animStartDeg 是运行时状态，不来自 prefs。
+        // 重新 load 会得到全新对象、字段回默认值，所以必须从旧快照继承，
+        // 否则每 30 秒一次的兜底轮询会把“插电变绿”重置回原色。
+        if (previous != null) {
+            fresh.pulseAlpha = previous.pulseAlpha;
+            if (chargeAnimating) {
+                fresh.animStartDeg = previous.animStartDeg;
+            }
+            if (blending) {
+                fresh.chargeBlend = previous.chargeBlend;
+            }
+        }
+        if (!blending) {
+            fresh.chargeBlend = charging ? 1f : 0f;
+        }
+        config = fresh;
 
         updateHiddenPackages(config.hiddenPackages);
         syncForegroundPoller();
@@ -312,7 +329,8 @@ public class RingOverlayView extends View {
         long costUs = (System.nanoTime() - started) / 1000L;
         XposedBridge.log("[CutoutRing] config reload cost=" + costUs + "us hiddenApps="
                 + hiddenPackages.size() + " dark=" + config.darkMode
-                + " breath=" + breathing + " pair=" + pair);
+                + " breath=" + breathing + " pair=" + pair
+                + " charging=" + charging + " blend=" + config.chargeBlend);
     }
 
     /** 供首页显示模块状态：返回挖孔的圆心与半径描述，未知时返回 null。 */
@@ -430,8 +448,15 @@ public class RingOverlayView extends View {
         try {
             Object svc = getContext().getSystemService(Context.BATTERY_SERVICE);
             if (svc instanceof BatteryManager) {
-                int capacity = ((BatteryManager) svc)
-                        .getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
+                BatteryManager bm = (BatteryManager) svc;
+                int capacity = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
+                // 没有 sticky 广播时也要补上充电状态，否则插着电注入会一直显示原色
+                if (bm.isCharging() && !charging) {
+                    charging = true;
+                    animateChargeBlend(true);
+                    pluggedInitialized = true;
+                    wasPlugged = true;
+                }
                 if (capacity >= 0) {
                     level = capacity;
                     updateBreathing();

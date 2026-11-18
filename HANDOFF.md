@@ -12,8 +12,8 @@
 | 仓库 | https://github.com/afetera/CutoutBatteryRing （public，MIT） |
 | 包名 | `io.github.eta.cutoutring` |
 | 作用域 | `com.android.systemui` |
-| 当前版本 | 1.21（versionCode 22） |
-| 最新提交 | 见 `git log -1`（1.21 已移除功率显示） |
+| 当前版本 | 1.22（versionCode 23） |
+| 最新提交 | 见 `git log -1`（1.22 修复插电绿被配置重载重置） |
 | 作者署名 | afetera `<zhanglingyu000@126.com>` |
 
 ## 2. 开发/测试设备
@@ -59,6 +59,14 @@
    Android 11+ 下应用选择器只能看到系统应用（这个是真实踩过的 bug）。
 7. **首页模块状态**：`ACTION_PING` / `ACTION_PONG` 通道，SystemUI 回传运行时解析到的
    挖孔坐标与隐藏应用数，是"真实探测"而非猜测。
+8. **配置重载会新建 `RingConfig`**：`reloadConfig()` 每 30 秒跑一次兜底轮询，
+   `RingConfig.load()` 返回全新对象，`chargeBlend`（充电色混合比例）、`pulseAlpha`（呼吸亮度）、
+   `animStartDeg`（动画角度）这些**运行时字段会回到默认值**。所以 reload 后必须从旧快照继承，
+   并按当前 `charging` 校正 `chargeBlend`——否则会出现「插电变绿 → 约 30 秒后又恢复原色」。
+   这类字段不属于 prefs，别想着从 SharedPreferences 里读回来。
+9. **电池充电状态看 `EXTRA_STATUS`，不是 `EXTRA_PLUGGED`**：`cmd battery unplug` 只改供电标志、
+   不改 `status`，用它测不了模块的拔电分支；要复现拔电请用 `cmd battery set status 3`，
+   插电用 `cmd battery set status 2`，测完 `cmd battery reset` 还原。
 
 ## 5. 已放弃的方案（别再试）
 
@@ -111,6 +119,7 @@
 | 1.19 | （已废弃）充电功率内环试验 |
 | 1.20 | App 布局整理：颜色一行四选、位置微调折叠、更新日志折叠、底部留白；功率改为叠加显示（仅试验） |
 | 1.21 | 移除充电功率显示，回到纯粹的电量环；保留 1.20 的布局整理 |
+| 1.22 | 修复插电变绿后又被 30 秒配置重载重置回原色；无 sticky 广播时补读充电状态 |
 
 ## 8. 实测数据（可复现，作为基线）
 
